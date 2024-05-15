@@ -201,7 +201,7 @@ int MOApplication::setup(MOMultiProcess& multiProcess, bool forceSelect)
 
   log::debug("command line: '{}'", QString::fromWCharArray(GetCommandLineW()));
 
-  log::info("starting Mod Organizer version {} revision {} in {}, usvfs: {}",
+  log::info("starting Mod Organizer (ThunderStore) version {} revision {} in {}, usvfs: {}",
             createVersionInfo().displayString(3), GITID,
             QCoreApplication::applicationDirPath(), MOShared::getUsvfsVersionString());
 

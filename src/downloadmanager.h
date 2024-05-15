@@ -41,6 +41,7 @@ along with Mod Organizer.  If not, see <http://www.gnu.org/licenses/>.
 #include <idownloadmanager.h>
 #include <modrepositoryfileinfo.h>
 #include <set>
+#include <ror2mmurl.h>
 using namespace boost::accumulators;
 
 namespace MOBase
@@ -404,6 +405,8 @@ public:
 
 public:  // IDownloadManager interface:
   int startDownloadURLs(const QStringList& urls);
+
+  int startDownloadROR2MMURL(QString urls);
   int startDownloadNexusFile(int modID, int fileID);
   QString downloadPath(int id);
 
@@ -563,6 +566,10 @@ private:
    **/
   bool addDownload(const QStringList& URLs, QString gameName, int modID, int fileID,
                    const MOBase::ModRepositoryFileInfo* fileInfo);
+
+  void addROR2MMDownload(ROR2MMUrl url);
+
+
 
   // important: the caller has to lock the list-mutex, otherwise the
   // DownloadInfo-pointer might get invalidated at any time

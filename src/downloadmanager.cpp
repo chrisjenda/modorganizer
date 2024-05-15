@@ -440,6 +440,50 @@ void DownloadManager::refreshList()
   }
 }
 
+void DownloadManager::addROR2MMDownload(ROR2MMUrl url)
+{
+  ModRepositoryFileInfo* fileInfo = new ModRepositoryFileInfo();
+  fileInfo->fileName              = url.fileName();
+
+  QUrl preferredUrl = QUrl::fromEncoded(url.downloadUrl().toLocal8Bit());
+  log::debug("selected download url: {}", preferredUrl.toString());
+  QHttp2Configuration h2Conf;
+  h2Conf.setSessionReceiveWindowSize(
+      16777215);  // 16 MiB, based on Chrome and Firefox values
+  h2Conf.setStreamReceiveWindowSize(16777215);
+  QNetworkRequest request(preferredUrl);
+  request.setHeader(QNetworkRequest::UserAgentHeader,
+                    m_NexusInterface->getAccessManager()->userAgent());
+  request.setAttribute(QNetworkRequest::CacheSaveControlAttribute, false);
+  request.setAttribute(QNetworkRequest::CacheLoadControlAttribute,
+                       QNetworkRequest::AlwaysNetwork);
+  request.setHttp2Configuration(h2Conf);
+
+  QNetworkReply* reply = m_NexusInterface->getAccessManager()->get(request);
+
+  DownloadInfo* newDownload =
+      DownloadInfo::createNew(fileInfo, QStringList() << url.downloadUrl());
+
+  QString baseName = "Unknown";
+  if (!fileInfo->fileName.isEmpty()) {
+    baseName = fileInfo->fileName;
+  } else {
+    QString dispoName = getFileNameFromNetworkReply(reply);
+
+    if (!dispoName.isEmpty()) {
+      baseName = dispoName;
+    }
+  }
+
+  startDisableDirWatcher();
+  newDownload->setName(getDownloadFileName(baseName), false);
+  endDisableDirWatcher();
+
+  startDownload(reply, newDownload, false);
+
+  return;
+}
+
 bool DownloadManager::addDownload(const QStringList& URLs, QString gameName, int modID,
                                   int fileID, const ModRepositoryFileInfo* fileInfo)
 {
@@ -1904,6 +1948,12 @@ int DownloadManager::startDownloadURLs(const QStringList& urls)
 {
   ModRepositoryFileInfo info;
   addDownload(urls, "", -1, -1, &info);
+  return m_ActiveDownloads.size() - 1;
+}
+
+int DownloadManager::startDownloadROR2MMURL(QString url)
+{
+  addROR2MMDownload(ROR2MMUrl(url));
   return m_ActiveDownloads.size() - 1;
 }
 

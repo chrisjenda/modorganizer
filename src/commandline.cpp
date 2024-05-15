@@ -51,7 +51,7 @@ CommandLine::CommandLine() : m_command(nullptr)
   createOptions();
 
   add<RunCommand, ReloadPluginCommand, DownloadFileCommand, RefreshCommand,
-      CrashDumpCommand, LaunchCommand>();
+      CrashDumpCommand, LaunchCommand, DownloadROR2MMCommand>();
 }
 
 std::optional<int> CommandLine::process(const std::wstring& line)
@@ -839,7 +839,21 @@ Command::Meta DownloadFileCommand::meta() const
   return {"download", "downloads a file", "URL", ""};
 }
 
+Command::Meta DownloadROR2MMCommand::meta() const
+{
+  return {"downloadror2mm", "downloads a thunderstore file", "URL", ""};
+}
+
 po::options_description DownloadFileCommand::getInternalOptions() const
+{
+  po::options_description d;
+
+  d.add_options()("URL", po::value<std::string>()->required(), "file URL");
+
+  return d;
+}
+
+po::options_description DownloadROR2MMCommand::getInternalOptions() const
 {
   po::options_description d;
 
@@ -857,7 +871,21 @@ po::positional_options_description DownloadFileCommand::getPositional() const
   return d;
 }
 
+po::positional_options_description DownloadROR2MMCommand::getPositional() const
+{
+  po::positional_options_description d;
+
+  d.add("URL", 1);
+
+  return d;
+}
+
 bool DownloadFileCommand::canForwardToPrimary() const
+{
+  return true;
+}
+
+bool DownloadROR2MMCommand::canForwardToPrimary() const
 {
   return true;
 }
@@ -875,6 +903,22 @@ std::optional<int> DownloadFileCommand::runPostOrganizer(OrganizerCore& core)
   MessageDialog::showMessage(QObject::tr("Download started"), qApp->activeWindow(),
                              false);
   core.downloadManager()->startDownloadURLs(QStringList() << url);
+
+  return {};
+}
+
+std::optional<int> DownloadROR2MMCommand::runPostOrganizer(OrganizerCore& core)
+{
+  const QString url = QString::fromStdString(vm()["URL"].as<std::string>());
+
+  if (!url.startsWith("ror2mm://")) {
+    reportError(QObject::tr("Download URL must start with ror2mm://"));
+    return 1;
+  }
+
+  log::debug("starting direct download from command line: {}", url.toStdString());
+  MessageDialog::showMessage(QObject::tr("Download started"), qApp->activeWindow(), false);
+  core.downloadManager()->startDownloadROR2MMURL(url);
 
   return {};
 }
